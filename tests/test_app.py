@@ -365,3 +365,35 @@ def test_stt_failures_are_told_apart(client: TestClient, monkeypatch: Any) -> No
     assert post(422) == 422  # undecodable clip: the child should just try again
     assert post(None) == 502  # sidecar unreachable
     assert post(500) == 502
+
+
+def test_parent_metrics_hard_words_and_csv(client: TestClient) -> None:
+    login(client)
+    kid = add_child(client, "Eve")
+    aid = assignment_ids(add_passage(client, [kid]))[kid]
+    client.post(f"/api/recite/{aid}/ready")
+    # Two misses on "village" (line 2 isn't in scope yet, so miss "woods" twice instead).
+    say(client, aid, "whose forest these are I think I know")
+    say(client, aid, "whose forest these are I think I know", peeked=True)
+    say(client, aid, LINES[0])
+
+    page = client.get("/parent").text
+    assert "Last 7 days" in page and "All time" in page
+    assert "Export CSV" in page
+    # 3 attempts, 1 clean → 33%; one attempt with help → 33%.
+    assert "33%" in page
+    # "woods" missed twice → listed under Hard to say.
+    assert "Hard to say" in page and "woods" in page
+
+    detail = client.get(f"/parent/recite/{aid}").text
+    assert "Progress" in detail and "with help" in detail and "woods" in detail
+
+    r = client.get(f"/parent/children/{kid}/attempts.csv")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
+    assert "attachment" in r.headers["content-disposition"]
+    rows = r.text.strip().splitlines()
+    assert rows[0].startswith("when,kind,item,step,result,right,of,accuracy_pct,help,missed")
+    assert len(rows) == 4
+    assert rows[1].count(",missed,") == 1 and ",woods," in rows[1]
+    assert ",yes," in rows[2]
+    assert ",clean," in rows[3]

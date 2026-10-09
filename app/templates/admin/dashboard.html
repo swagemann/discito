@@ -1,5 +1,5 @@
 {% extends "admin/base.html" %}
-{% from "_macros.html" import avatar, status_pill %}
+{% from "_macros.html" import avatar, status_pill, summary_table %}
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
 {% if not cards %}
@@ -15,8 +15,10 @@
     <header class="mb-4 flex items-center gap-3">
       {{ avatar(c, "h-11 w-11 text-2xl") }}
       <h2 class="text-xl font-bold">{{ c.name }}</h2>
+      <a href="/parent/children/{{ c.id }}/attempts.csv" class="btn-ghost btn-sm ml-auto" title="Every attempt as a spreadsheet, for a teacher or therapist">⬇ Export CSV</a>
     </header>
-    <div class="grid gap-6 lg:grid-cols-5">
+    {{ summary_table(card.summary, spelling=true) }}
+    <div class="mt-6 grid gap-6 lg:grid-cols-5">
       <div class="lg:col-span-3">
         <h3 class="mb-2 text-sm font-bold uppercase tracking-wide text-ink-soft">Assignments</h3>
         {% if card.rows %}
@@ -62,6 +64,15 @@
           {% endfor %}
         </ul>
         {% else %}<p class="text-sm text-ink-soft">No misses yet.</p>{% endif %}
+        {% if card.hard_words %}
+        <h3 class="mb-2 mt-5 text-sm font-bold uppercase tracking-wide text-ink-soft">Hard to say</h3>
+        <p class="mb-2 text-xs text-ink-soft">Words the grader keeps missing across lines — often pronunciation rather than memory.</p>
+        <ul class="flex flex-wrap gap-2 text-sm">
+          {% for h in card.hard_words %}
+          <li class="rounded-full bg-stone-100 px-3 py-1 font-serif" title="{{ h.lines|join(', ') }}">{{ h.word }} <span class="font-sans text-xs text-ink-soft">×{{ h.misses }}</span></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
       </div>
     </div>
   </section>

@@ -38,8 +38,9 @@ class Settings(BaseSettings):
     # can be exercised without a microphone or the whisper container.
     stt_typed_fallback: bool = False
 
-    # Open question in the PRD: should a peek invalidate the step's clean run?
-    # Default: no — peeks are logged and visible to the parent.
+    # Open question in the PRD: should help (Listen before recording, or reading
+    # along) invalidate the step's clean run? Default: no — it is logged and shown
+    # to the parent as "with help".
     peek_invalidates: bool = False
 
     @property

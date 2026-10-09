@@ -15,3 +15,42 @@
 {% macro status_pill(row) -%}
 <span class="pill-{{ row.status }}">{{ row.status_label }}</span>
 {%- endmacro %}
+
+{# Period summary rows from stats.summarize(): last 7 days, the 7 before, all time. #}
+{% macro pct(v) -%}{% if v is none %}<span class="text-ink-soft">—</span>{% else %}{{ v }}%{% endif %}{%- endmacro %}
+{% macro summary_table(rows, spelling=false) -%}
+{% if rows[-1].empty %}
+<p class="text-sm text-ink-soft">No attempts yet.</p>
+{% else %}
+<div class="overflow-x-auto">
+<table class="w-full text-sm">
+  <thead class="text-left text-ink-soft">
+    <tr>
+      <th class="py-1 pr-3 font-semibold"></th>
+      <th class="pr-3 font-semibold" title="Distinct days with any attempt">Days</th>
+      <th class="pr-3 font-semibold" title="Graded recitations">Attempts</th>
+      <th class="pr-3 font-semibold" title="Attempts graded clean (overrides applied)">Clean</th>
+      <th class="pr-3 font-semibold" title="Words heard correctly, over every attempt">Words right</th>
+      <th class="pr-3 font-semibold" title="Attempts after Listen, or with the text kept on screen">With help</th>
+      <th class="pr-3 font-semibold" title="Recorded speaking time">Spoken</th>
+      {% if spelling %}<th class="pr-3 font-semibold" title="Spelling answers">Spelled</th><th class="font-semibold">Correct</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody class="divide-y divide-line tabular-nums">
+    {% for s in rows %}
+    <tr class="{{ 'text-ink-soft' if s.empty }}">
+      <td class="py-1.5 pr-3 font-semibold">{{ s.label }}</td>
+      <td class="pr-3">{{ s.days }}</td>
+      <td class="pr-3">{{ s.recite_attempts }}</td>
+      <td class="pr-3">{{ pct(s.clean_pct) }}</td>
+      <td class="pr-3">{{ pct(s.accuracy_pct) }}</td>
+      <td class="pr-3">{{ pct(s.helped_pct) }}</td>
+      <td class="pr-3">{% if s.spoken_min %}{{ s.spoken_min }} min{% else %}<span class="text-ink-soft">—</span>{% endif %}</td>
+      {% if spelling %}<td class="pr-3">{{ s.spell_answers }}</td><td>{{ pct(s.spell_pct) }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{%- endmacro %}

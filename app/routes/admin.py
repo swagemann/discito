@@ -6,7 +6,7 @@ import time
 from typing import Any
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import PlainTextResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -95,8 +95,31 @@ def dashboard(request: Request, db: Session = Depends(get_session)) -> Any:
     cards = []
     for c in _children(db):
         rows = stats.sort_rows(stats.recite_rows(db, c.id) + stats.spelling_rows(db, c.id))
-        cards.append({"child": c, "rows": rows, "trouble": stats.trouble_spots(db, c.id)})
+        cards.append(
+            {
+                "child": c,
+                "rows": rows,
+                "trouble": stats.trouble_spots(db, c.id),
+                "summary": stats.child_summary(db, c.id),
+                "hard_words": stats.hard_words(db, child_id=c.id, limit=6),
+            }
+        )
     return render(request, "admin/dashboard.html", {"cards": cards})
+
+
+@guarded.get("/children/{child_id}/attempts.csv")
+def child_attempts_csv(child_id: int, db: Session = Depends(get_session)) -> Any:
+    """Every graded attempt and spelling answer, for sharing with a teacher or therapist."""
+    c = db.get(Child, child_id) or _404()
+    body = stats.attempts_csv(
+        stats.child_recite_attempts(db, c.id), stats.child_spelling_attempts(db, c.id)
+    )
+    name = "".join(ch for ch in c.name.lower() if ch.isalnum()) or "child"
+    return PlainTextResponse(
+        body,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="discito-{name}-attempts.csv"'},
+    )
 
 
 # --- children ------------------------------------------------------------------------
@@ -543,6 +566,8 @@ def recite_assignment(
             "sections": sections,
             "lines": lines,
             "latest_id": attempts[0].id if attempts else None,
+            "summary": stats.assignment_summary(db, a.id),
+            "hard_words": stats.hard_words(db, assignment_id=a.id, limit=10),
         },
     )
 

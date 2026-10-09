@@ -12,13 +12,14 @@
   const ui = {
     progress: $("progress"), progressLabel: $("progress-label"), progressRight: $("progress-right"),
     kicker: $("step-kicker"), title: $("step-title"), text: $("text"), result: $("result"),
-    listen: $("listen"), peek: $("peek"), ready: $("ready"), mic: $("mic"),
+    listen: $("listen"), ready: $("ready"), mic: $("mic"),
     typedForm: $("typed-form"),
   };
 
   let view = null;
-  let peeking = false; // text revealed right now
-  let peeked = false; // any peek/listen since the last graded attempt (sent to the server)
+  // Listened since the last graded attempt, or read along while recording.
+  // Sent to the server as `peeked`; the parent sees it as "with help".
+  let helped = false;
   let busy = false;
   let starting = false; // mic permission/stream requested, recorder not yet live
   let recorder = null;
@@ -116,20 +117,19 @@
         : "";
 
     const textIdx = v.stage === "learn" ? v.learn : v.stage === "full" ? [] : v.scope;
-    const reveal = v.stage === "passed" || v.show_text || (peeking && !recorder);
+    // The text stays up while the child reads and listens, and goes away once the
+    // mic is live (unless the parent turned on read-along). Full runs never show it.
+    const micLive = !!recorder || starting || (busy && v.stage !== "learn");
+    const reveal = v.stage === "passed" || v.show_text || !micLive;
     if (v.stage !== "full") renderText(textIdx, { hidden: !reveal });
     else ui.text.replaceChildren(el("p", "font-sans text-lg text-ink-soft", `${v.total} lines · from the top`));
 
-    const canHelp = v.stage !== "full";
-    show(ui.listen, canHelp);
-    show(ui.peek, canHelp && !v.show_text && v.stage !== "passed");
-    ui.peek.setAttribute("aria-pressed", String(peeking));
-    ui.peek.textContent = peeking ? "🙈 Hide" : "👀 Peek";
+    show(ui.listen, v.stage !== "full");
     show(ui.ready, v.stage === "learn");
     show(ui.mic, v.stage !== "learn");
     show(ui.typedForm, !!root.dataset.typed && v.stage !== "learn");
     ui.typedForm.classList.toggle("flex", !!root.dataset.typed && v.stage !== "learn");
-    [ui.listen, ui.peek, ui.ready].forEach((b) => (b.disabled = busy || !!recorder));
+    [ui.listen, ui.ready].forEach((b) => (b.disabled = busy || !!recorder));
     ui.mic.disabled = busy || starting;
   }
 
@@ -177,7 +177,7 @@
   function cheer(before, after, a) {
     if (after.stage === "passed" && before.stage !== "passed") return "Passed! You know it by heart! 🎉";
     if (before.stage === "passed") return `Great review — ${a.matched}/${a.total} words.`;
-    if (after.stage === "full" && before.stage === "recite") return "Every line! Now the whole passage, no peeking.";
+    if (after.stage === "full" && before.stage === "recite") return "Every line! Now the whole passage, no text.";
     if (before.stage === "full") return `Clean run! ${after.state.clean_full_runs} of ${after.k_required}.`;
     if (before.stage === "drill") return after.stage === "drill" ? "Got it! One more." : "Nice fix! Back to the chain.";
     return `Clean! Line ${after.state.n} unlocked.`;
@@ -210,11 +210,10 @@
     showGrading();
     const before = view;
     try {
-      fields.append("peeked", peeked ? "true" : "false");
+      fields.append("peeked", helped ? "true" : "false");
       const next = await post(`${api}/attempt`, fields);
       view = next;
-      peeked = false;
-      peeking = false;
+      helped = false;
       busy = false;
       setMic("🎙️", "Record");
       render();
@@ -241,7 +240,7 @@
     // second tap isn't needed (and can't start a second recorder).
     starting = true;
     if (window.speechSynthesis) speechSynthesis.cancel();
-    peeking = false; // no reading along while the mic is live
+    if (view.show_text && view.stage !== "passed" && view.stage !== "full") helped = true;
     setMic("…", "Starting microphone");
     render();
     setStatus("Starting the mic…");
@@ -303,14 +302,8 @@
   });
 
   ui.listen.addEventListener("click", () => {
-    if (view.stage !== "passed") peeked = true;
+    if (view.stage !== "passed") helped = true;
     sayIndexes(listenIndexes());
-  });
-
-  ui.peek.addEventListener("click", () => {
-    peeking = !peeking;
-    if (peeking) peeked = true;
-    render();
   });
 
   ui.ready.addEventListener("click", async () => {
@@ -318,7 +311,6 @@
     render();
     try {
       view = await post(`${api}/ready`, {});
-      peeking = false;
     } finally {
       busy = false;
       clearResult();

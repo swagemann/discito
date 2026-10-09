@@ -140,7 +140,7 @@ def submit_attempt(
         st = chain.finish_learn(st)
         _save_state(a, st)
     if st.stage == "full":
-        peeked = False  # no peek in full mode; the UI hides it
+        peeked = False  # no text or Listen in full mode; the UI hides both
     scoped = scope_sections(a, st)
     g = grade([s.text for s in scoped], transcript)
     clean = g.clean(a.pass_threshold)

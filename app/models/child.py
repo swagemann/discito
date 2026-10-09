@@ -14,7 +14,8 @@ class Child(TimestampMixin, Base):
     # Sections unlocked per chain step.
     chunk_size: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     tts_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.9)
-    # Text visible during partial practice (default hidden, peek allowed and logged).
+    # Keep the text on screen while recording (read along). It always shows before
+    # recording; attempts made with it up are marked as helped.
     show_text: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

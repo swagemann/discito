@@ -72,7 +72,7 @@ default `small.en`), so first start doesn't download from Hugging Face.
 | `WHISPER_MODEL` | `small.en` | switch to `base.en` if grading is too slow on the VPS |
 | `WHISPER_CPU_THREADS` | `0` (all) | |
 | `STT_TYPED_FALLBACK` | off | dev only |
-| `PEEK_INVALIDATES` | off | a peek fails the step's clean run |
+| `PEEK_INVALIDATES` | off | an attempt made with help (Listen, or read-along) fails the step's clean run |
 
 ## Behavior decisions (where the PRD left room)
 
@@ -93,12 +93,22 @@ default `small.en`), so first start doesn't download from Hugging Face.
   menu keeps its place; a paused test resumes where it stopped.
 - **Password forms lock out an address** after 5 wrong tries in 15 minutes
   (parent login and household unlock share the counter; it lives in memory).
+- **The text shows until the mic goes live.** Learn, chain, and drill steps show
+  the lines by default; they hide when recording starts and come back after
+  grading. There is no peek button. A per-child "read along" setting keeps the
+  text up while recording; such attempts (and any after Listen) are marked
+  "with help" for the parent. Full runs never show the text.
+- **Parent metrics.** Each child card and recite page shows last 7 days / 7 days
+  before / all time: days practiced, attempts, clean %, words right %, with-help
+  %, spoken minutes, spelling answers and correct %. "Hard to say" lists words
+  the grader misses at least twice across lines. `/parent/children/<id>/attempts.csv`
+  exports every attempt and spelling answer for a teacher or therapist.
 - **No audio is persisted.** It is held in memory for the sidecar call only.
   The PRD's "attempt review with audio" conflicts with this; review shows the
   transcript with misses highlighted.
 
 Open questions from the PRD, as defaulted: carry-forward **on**; Whisper
-**`small.en`** (env switch to `base.en`); a peek **does not** invalidate a
+**`small.en`** (env switch to `base.en`); help **does not** invalidate a
 clean run (it's logged and shown to the parent; `PEEK_INVALIDATES=1` flips it);
 homophones come from a **hand-maintained seed file**, `app/core/homophones.txt`.
 

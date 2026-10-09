@@ -37,7 +37,7 @@
   </div>
   <label class="flex items-center gap-2 text-sm sm:col-span-2">
     <input type="checkbox" name="show_text" value="true" {% if c and c.show_text %}checked{% endif %}>
-    Show the text during partial practice (default: hidden, peek allowed and logged)
+    Keep the text on screen while recording (read along). The text always shows before recording; attempts made this way are marked “with help”.
   </label>
   <div class="sm:col-span-2"><button class="btn-primary">{{ submit }}</button></div>
 </form>
