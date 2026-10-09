@@ -19,9 +19,12 @@ from app.core.config import get_settings
 BASE_DIR = Path(__file__).resolve().parent
 
 # Bump when static assets change to bust browser caches.
-ASSET_VERSION = "1"
+ASSET_VERSION = "2"
 
-AVATARS = ["🦉", "🦊", "🐻", "🐢", "🦁", "🐬", "🦄", "🐝", "🐙", "🦖", "🐧", "🐰"]
+AVATARS = [
+    "🦉", "🦊", "🦝", "🐻", "🐼", "🐨", "🐯", "🦁", "🐱", "🐶", "🐸", "🐢",
+    "🐬", "🦈", "🐙", "🦄", "🦋", "🐝", "🦖", "🐧", "🐰", "🦔", "🐺", "🦜",
+]
 COLORS = ["sky", "rose", "amber", "emerald", "violet", "orange"]
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))

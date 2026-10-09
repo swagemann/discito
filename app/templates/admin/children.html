@@ -1,5 +1,5 @@
 {% extends "admin/base.html" %}
-{% from "_macros.html" import avatar %}
+{% from "_macros.html" import avatar, tint %}
 {% block page_title %}Kids{% endblock %}
 
 {% macro child_form(c, action, submit) %}
@@ -21,9 +21,15 @@
   </div>
   <div>
     <label class="label">Color</label>
-    <select name="color" class="field">
-      {% for col in colors %}<option value="{{ col }}" {% if c and c.color == col %}selected{% endif %}>{{ col }}</option>{% endfor %}
-    </select>
+    <div class="flex flex-wrap gap-2">
+      {% for col in colors %}
+      <label class="cursor-pointer" title="{{ col }}">
+        <input type="radio" name="color" value="{{ col }}" class="peer sr-only" {% if (c and c.color == col) or (not c and loop.first) %}checked{% endif %}>
+        <span class="block h-9 w-9 rounded-full ring-2 ring-offset-2 ring-offset-surface transition peer-checked:scale-110 peer-checked:ring-ink {{ tint.get(col, tint.sky) }}"></span>
+        <span class="sr-only">{{ col }}</span>
+      </label>
+      {% endfor %}
+    </div>
   </div>
   <div class="grid grid-cols-2 gap-3">
     <div>
