@@ -12,7 +12,7 @@
   const ui = {
     progress: $("progress"), progressLabel: $("progress-label"), progressRight: $("progress-right"),
     kicker: $("step-kicker"), title: $("step-title"), text: $("text"), result: $("result"),
-    listen: $("listen"), peek: $("peek"), ready: $("ready"), mic: $("mic"), micHint: $("mic-hint"),
+    listen: $("listen"), peek: $("peek"), ready: $("ready"), mic: $("mic"),
     typedForm: $("typed-form"),
   };
 
@@ -20,6 +20,7 @@
   let peeking = false; // text revealed right now
   let peeked = false; // any peek/listen since the last graded attempt (sent to the server)
   let busy = false;
+  let starting = false; // mic permission/stream requested, recorder not yet live
   let recorder = null;
   let recTimer = null;
   const MAX_SECONDS = 180;
@@ -67,14 +68,12 @@
       return {
         kicker: many ? "New lines" : "New line",
         title: many ? `Listen to lines ${first + 1}–${n}` : `Listen to ${lineName(first)}`,
-        hint: "Listen as many times as you like, then tap “I'm ready”.",
       };
     }
     if (v.stage === "recite") {
       return {
         kicker: "From memory",
         title: n === 1 ? "Say line 1" : `Say lines 1–${n}`,
-        hint: "Tap the mic, say it, then tap again to finish.",
       };
     }
     if (v.stage === "drill") {
@@ -83,17 +82,15 @@
       return {
         kicker: "Tricky spot",
         title: transition ? `Say ${lineName(s - 1)} into ${lineName(s)}` : `Say ${lineName(s)} by itself`,
-        hint: "Short practice on the hard part, then back to the chain.",
       };
     }
     if (v.stage === "full") {
       return {
         kicker: "Whole passage",
         title: "Say the whole thing!",
-        hint: `No peeking now. ${v.k_required} clean runs in a row to pass.`,
       };
     }
-    return { kicker: "Passed 🎉", title: "You know it by heart!", hint: "Recite it any time to keep it fresh." };
+    return { kicker: "Passed 🎉", title: "You know it by heart!" };
   }
 
   function render() {
@@ -102,7 +99,6 @@
     const copy = stepCopy(v);
     ui.kicker.textContent = copy.kicker;
     ui.title.textContent = copy.title;
-    ui.micHint.textContent = copy.hint;
 
     if (v.stage === "passed") {
       ui.progressLabel.textContent = "Passed";
@@ -120,7 +116,7 @@
         : "";
 
     const textIdx = v.stage === "learn" ? v.learn : v.stage === "full" ? [] : v.scope;
-    const reveal = v.stage === "passed" || v.show_text || peeking;
+    const reveal = v.stage === "passed" || v.show_text || (peeking && !recorder);
     if (v.stage !== "full") renderText(textIdx, { hidden: !reveal });
     else ui.text.replaceChildren(el("p", "font-sans text-lg text-ink-soft", `${v.total} lines · from the top`));
 
@@ -134,7 +130,7 @@
     show(ui.typedForm, !!root.dataset.typed && v.stage !== "learn");
     ui.typedForm.classList.toggle("flex", !!root.dataset.typed && v.stage !== "learn");
     [ui.listen, ui.peek, ui.ready].forEach((b) => (b.disabled = busy || !!recorder));
-    ui.mic.disabled = busy;
+    ui.mic.disabled = busy || starting;
   }
 
   function listenIndexes() {
@@ -159,6 +155,23 @@
   function clearResult() {
     show(ui.result, false);
     ui.result.replaceChildren();
+  }
+
+  // Transient status shown in the card (recording timer, grading spinner).
+  function setStatus(text) {
+    setResult("neutral", [el("p", "text-lg font-semibold", text)]);
+  }
+
+  function setMic(glyph, label) {
+    ui.mic.textContent = glyph;
+    ui.mic.setAttribute("aria-label", label);
+  }
+
+  function showGrading() {
+    busy = true;
+    setMic("⏳", "Grading");
+    render();
+    setStatus("Grading… 🎧");
   }
 
   function cheer(before, after, a) {
@@ -194,9 +207,7 @@
   }
 
   async function submit(fields) {
-    busy = true;
-    ui.micHint.textContent = "Listening back…";
-    render();
+    showGrading();
     const before = view;
     try {
       fields.append("peeked", peeked ? "true" : "false");
@@ -205,10 +216,12 @@
       peeked = false;
       peeking = false;
       busy = false;
+      setMic("🎙️", "Record");
       render();
       showAttempt(before, next);
     } catch (err) {
       busy = false;
+      setMic("🎙️", "Record");
       render();
       setResult("bad", [el("p", "font-semibold", err.message)]);
     }
@@ -224,16 +237,27 @@
       setResult("bad", [el("p", "font-semibold", "This browser can't record audio. Try Chrome, Edge, Firefox or Safari over https.")]);
       return;
     }
+    // Getting the mic can take a beat on phones; show it right away so a
+    // second tap isn't needed (and can't start a second recorder).
+    starting = true;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    peeking = false; // no reading along while the mic is live
+    setMic("…", "Starting microphone");
+    render();
+    setStatus("Starting the mic…");
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
       });
     } catch (_) {
+      starting = false;
+      setMic("🎙️", "Record");
+      render();
       setResult("bad", [el("p", "font-semibold", "I need the microphone. Allow it in the browser's address bar, then try again.")]);
       return;
     }
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    starting = false;
     clearResult();
     const mime = pickMime();
     const chunks = [];
@@ -245,8 +269,6 @@
       recorder = null;
       clearInterval(recTimer);
       ui.mic.classList.remove("recording");
-      ui.mic.textContent = "🎙️";
-      ui.mic.setAttribute("aria-label", "Record");
       const fd = new FormData();
       fd.append("audio", new Blob(chunks, { type }), type.includes("mp4") ? "clip.mp4" : "clip.webm");
       submit(fd);
@@ -254,20 +276,29 @@
     recorder.start();
     const started = Date.now();
     ui.mic.classList.add("recording");
-    ui.mic.textContent = "■";
-    ui.mic.setAttribute("aria-label", "Stop recording");
-    ui.micHint.textContent = "Recording… tap ■ when you're done.";
-    recTimer = setInterval(() => {
-      const s = Math.round((Date.now() - started) / 1000);
-      ui.micHint.textContent = `Recording… ${s}s — tap ■ when you're done.`;
-      if (s >= MAX_SECONDS && recorder) recorder.stop();
-    }, 500);
+    setMic("■", "Stop recording");
     render();
+    setStatus("🔴 Recording… tap ■ when you're done.");
+    recTimer = setInterval(() => {
+      if (!recorder || busy) return;
+      const s = Math.round((Date.now() - started) / 1000);
+      setStatus(`🔴 Recording… ${s}s — tap ■ when you're done.`);
+      if (s >= MAX_SECONDS) stopRecording();
+    }, 500);
+  }
+
+  // Feedback goes up before onstop fires so the tap never looks ignored.
+  function stopRecording() {
+    if (!recorder || busy) return;
+    clearInterval(recTimer);
+    ui.mic.classList.remove("recording");
+    showGrading();
+    recorder.stop();
   }
 
   ui.mic.addEventListener("click", () => {
-    if (busy) return;
-    if (recorder) recorder.stop();
+    if (busy || starting) return;
+    if (recorder) stopRecording();
     else startRecording();
   });
 
