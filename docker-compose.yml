@@ -25,6 +25,11 @@ services:
       whisper:
         condition: service_started
     networks: [default, internal]
+    # The container sits on several networks (compose default, internal, and
+    # Coolify's proxy network). Tell Traefik which one to dial, or it may pick
+    # one the proxy isn't attached to and answer 504 Gateway Timeout.
+    labels:
+      traefik.docker.network: coolify
     expose:
       - "8000"
     healthcheck:
