@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@source "../../templates";
+@source "../js";
+/* Status pills are built as pill-{{ status }} in templates. */
+@source inline("pill-not_started pill-partial pill-practicing pill-full pill-passed");
+
+/*
+ * THEME — warm paper ground for kids' daytime practice. Tailwind v4 utilities
+ * compile to var(--color-*) references, so the palette lives here only.
+ */
+@theme {
+  --color-paper: #fbf7ef;       /* page ground */
+  --color-surface: #ffffff;     /* cards, inputs */
+  --color-ink: #23211c;         /* primary text */
+  --color-ink-soft: #6b665b;    /* secondary text */
+  --color-line: #e7dfcf;        /* hairline borders */
+  --color-accent: #2f6f62;      /* primary actions */
+  --color-accent-soft: #e2efe9;
+  --color-good: #2f7d4f;
+  --color-bad: #b4372f;
+
+  --font-sans: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  button, [role="button"] { cursor: pointer; }
+  button:disabled { cursor: not-allowed; opacity: .5; }
+  input, textarea, select { font: inherit; }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold
+      transition active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2
+      focus-visible:outline-accent;
+}
+@utility btn-primary {
+  @apply btn bg-accent text-white hover:brightness-110;
+}
+@utility btn-soft {
+  @apply btn bg-accent-soft text-accent hover:brightness-95;
+}
+@utility btn-ghost {
+  @apply btn border border-line bg-surface text-ink hover:bg-paper;
+}
+@utility btn-danger {
+  @apply btn border border-rose-200 bg-rose-50 text-bad hover:bg-rose-100;
+}
+@utility btn-sm {
+  @apply rounded-xl px-3 py-1.5 text-sm;
+}
+@utility card {
+  @apply rounded-3xl border border-line bg-surface p-5 shadow-sm;
+}
+@utility field {
+  @apply w-full rounded-xl border border-line bg-surface px-3 py-2 text-ink
+      focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30;
+}
+@utility label {
+  @apply mb-1 block text-sm font-semibold text-ink-soft;
+}
+@utility pill {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+}
+@utility pill-not_started {
+  @apply pill bg-stone-100 text-stone-700;
+}
+@utility pill-partial {
+  @apply pill bg-amber-100 text-amber-800;
+}
+@utility pill-practicing {
+  @apply pill bg-amber-100 text-amber-800;
+}
+@utility pill-full {
+  @apply pill bg-sky-100 text-sky-800;
+}
+@utility pill-passed {
+  @apply pill bg-emerald-100 text-emerald-800;
+}
+/* Practice text: words are spans so misses can be marked in place. */
+@utility verse {
+  @apply font-serif text-2xl leading-relaxed sm:text-3xl;
+}
+@utility w-miss {
+  @apply rounded bg-rose-100 px-0.5 text-bad underline decoration-2 decoration-bad;
+}
+@utility w-weak {
+  @apply underline decoration-dotted decoration-2 decoration-amber-500 underline-offset-4;
+}
+@utility hidden-line {
+  @apply my-2 h-4 rounded-full bg-stone-200;
+}
+progress.bar { @apply h-2 w-full overflow-hidden rounded-full; appearance: none; }
+progress.bar::-webkit-progress-bar { @apply rounded-full bg-stone-200; }
+progress.bar::-webkit-progress-value { @apply rounded-full bg-accent; }
+progress.bar::-moz-progress-bar { @apply rounded-full bg-accent; }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(180 55 47 / .45); }
+  100% { box-shadow: 0 0 0 22px rgb(180 55 47 / 0); }
+}
+.recording { animation: pulse-ring 1.2s ease-out infinite; }

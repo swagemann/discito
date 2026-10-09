@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Memoria{% endblock %}</title>
+  <meta name="theme-color" content="#fbf7ef">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/styles.css?v={{ v }}">
+  <script src="/static/js/common.js?v={{ v }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-dvh bg-paper font-sans text-ink antialiased">
+  {% block body %}{% endblock %}
+</body>
+</html>

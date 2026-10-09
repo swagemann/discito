@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Spelling{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-center gap-3">
+  <h1 class="text-2xl font-bold">{{ 'Archived lists' if archived else 'Spelling lists' }}</h1>
+  <a href="/parent/lists{{ '' if archived else '?archived=true' }}" class="text-sm text-ink-soft underline">{{ 'Show active' if archived else 'Show archived' }}</a>
+  <a href="/parent/lists/new" class="btn-primary btn-sm ml-auto">+ New list</a>
+</div>
+{% if lists %}
+<ul class="space-y-2">
+  {% for l in lists %}
+  <li class="card flex items-center gap-3 py-3">
+    <a href="/parent/lists/{{ l.id }}" class="min-w-0 flex-1">
+      <div class="font-bold">{{ l.title }}</div>
+      <div class="text-sm text-ink-soft">{{ l.words|selectattr('for_child_id', 'none')|list|length }} words · {{ l.assignments|length }} assigned{% if l.due_date %} · <span class="{{ l.due_date|due_class }}">due {{ l.due_date|fdate }}</span>{% endif %}</div>
+    </a>
+    <form method="post" action="/parent/lists/{{ l.id }}/archive">
+      <input type="hidden" name="archived" value="{{ 'false' if archived else 'true' }}">
+      <button class="btn-ghost btn-sm" {% if not archived and l.carry_forward %}data-confirm="Archive? Words each child still struggles with move to their next list."{% endif %}>{{ 'Restore' if archived else 'Archive' }}</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="card text-ink-soft">No lists{{ ' archived' if archived else ' yet' }}.</p>
+{% endif %}
+{% endblock %}

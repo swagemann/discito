@@ -1,0 +1,75 @@
+# Homophones accepted as matches when grading recitations.
+# One group per line, comma-separated. Hand-maintained; add words Whisper
+# keeps confusing for your passages. Lowercase, no punctuation.
+to, too, two
+there, their, theyre
+your, youre
+here, hear
+know, no
+knew, new
+right, write, rite
+whole, hole
+one, won
+four, for, fore
+eight, ate
+be, bee
+see, sea
+son, sun
+our, hour
+by, buy, bye
+red, read
+reed, read
+road, rode
+wait, weight
+way, weigh
+week, weak
+whose, whos
+wood, would
+where, wear, ware
+which, witch
+won, one
+threw, through
+peace, piece
+pray, prey
+prophet, profit
+raise, rays, raze
+reign, rain, rein
+seen, scene
+soul, sole
+sow, sew, so
+steal, steel
+tail, tale
+throne, thrown
+vain, vein, vane
+waist, waste
+mourning, morning
+heard, herd
+holy, wholly
+alter, altar
+seam, seem
+lo, low
+oh, o
+thy, thigh
+ye, yea
+nay, neigh
+hallowed, hollowed
+kneel, neal
+knead, need, kneed
+bow, bough
+beat, beet
+bare, bear
+die, dye
+dear, deer
+flower, flour
+lead, led
+made, maid
+meet, meat
+night, knight
+not, knot
+pane, pain
+plain, plane
+sent, scent, cent
+some, sum
+stare, stair
+thrown, throne
+wade, weighed

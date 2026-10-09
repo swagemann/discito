@@ -1,0 +1,36 @@
+# Keep CLAUDE.md local, not committed
+CLAUDE.md
+.claude/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+
+# Built assets (rebuilt at Docker image build time)
+app/static/css/styles.css
+
+# Local data (SQLite lives in /data in the container)
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar %}
+{% block body %}
+<main class="mx-auto flex min-h-dvh max-w-3xl flex-col px-4 py-8">
+  <header class="mb-10 flex items-center justify-between">
+    <h1 class="text-3xl font-bold tracking-tight">Who's practicing?</h1>
+    <a href="/parent" class="btn-ghost btn-sm" aria-label="Parent area">
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span class="sr-only sm:not-sr-only">Parent</span>
+    </a>
+  </header>
+  {% if children %}
+  <ul class="grid grid-cols-2 gap-5 sm:grid-cols-3">
+    {% for c in children %}
+    <li>
+      <a href="/c/{{ c.id }}" class="card flex flex-col items-center gap-3 py-8 transition hover:-translate-y-0.5 hover:shadow-md">
+        {{ avatar(c, "h-24 w-24 text-6xl") }}
+        <span class="text-xl font-bold">{{ c.name }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="card text-center">
+    <p class="mb-4 text-ink-soft">No profiles yet. A parent can add them.</p>
+    <a href="/parent/children" class="btn-primary">Add a child</a>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

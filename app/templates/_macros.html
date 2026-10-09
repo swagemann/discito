@@ -1,0 +1,17 @@
+{# Child color → static class strings (kept literal so Tailwind can see them). #}
+{% set tint = {
+  "sky": "bg-sky-100 ring-sky-300 text-sky-950",
+  "rose": "bg-rose-100 ring-rose-300 text-rose-950",
+  "amber": "bg-amber-100 ring-amber-300 text-amber-950",
+  "emerald": "bg-emerald-100 ring-emerald-300 text-emerald-950",
+  "violet": "bg-violet-100 ring-violet-300 text-violet-950",
+  "orange": "bg-orange-100 ring-orange-300 text-orange-950",
+} %}
+
+{% macro avatar(child, size="h-14 w-14 text-3xl") -%}
+<span class="inline-flex shrink-0 items-center justify-center rounded-full ring-2 {{ tint.get(child.color, tint.sky) }} {{ size }}" aria-hidden="true">{{ child.avatar }}</span>
+{%- endmacro %}
+
+{% macro status_pill(row) -%}
+<span class="pill-{{ row.status }}">{{ row.status_label }}</span>
+{%- endmacro %}

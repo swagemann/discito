@@ -1,0 +1,91 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ l.title if l else 'New list' }}{% endblock %}
+{% block content %}
+<a href="/parent/lists" class="text-sm text-ink-soft">← Spelling lists</a>
+<h1 class="mb-4 mt-1 text-2xl font-bold">{{ l.title if l else 'New spelling list' }}</h1>
+
+<form method="post" action="{{ '/parent/lists/' ~ l.id if l else '/parent/lists' }}" class="card grid gap-4 sm:grid-cols-2">
+  <div>
+    <label class="label" for="title">Title</label>
+    <input id="title" name="title" class="field" required value="{{ l.title if l else '' }}" placeholder="Week 6">
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="label" for="due_date">Due</label>
+      <input id="due_date" name="due_date" type="date" class="field" value="{{ l.due_date.isoformat() if l and l.due_date else '' }}">
+    </div>
+    <div>
+      <label class="label" for="pass_threshold">Test pass %</label>
+      <input id="pass_threshold" name="pass_threshold" type="number" min="50" max="100" class="field" value="{{ ((l.pass_threshold if l else 1) * 100)|round|int }}">
+    </div>
+  </div>
+  {% if not l %}
+  <div class="sm:col-span-2">
+    <label class="label" for="words">Words</label>
+    <textarea id="words" name="words" rows="8" class="field font-serif" placeholder="One per line, or comma-separated"></textarea>
+    <p class="mt-1 text-xs text-ink-soft">Add example sentences and homophone flags after creating.</p>
+  </div>
+  {% endif %}
+  <label class="flex items-center gap-2 text-sm sm:col-span-2">
+    <input type="checkbox" name="carry_forward" value="true" {% if not l or l.carry_forward %}checked{% endif %}>
+    Carry forward: words a child still struggles with when this list is passed or archived become review words in their next list
+  </label>
+  <fieldset class="sm:col-span-2">
+    <legend class="label">Assigned to</legend>
+    <div class="flex flex-wrap gap-3">
+      {% for c in children %}
+      <label class="flex items-center gap-2 rounded-xl border border-line px-3 py-2">
+        <input type="checkbox" name="child_ids" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.avatar }} {{ c.name }}
+      </label>
+      {% else %}<span class="text-sm text-ink-soft">Add kids first.</span>{% endfor %}
+    </div>
+  </fieldset>
+  <div class="sm:col-span-2"><button class="btn-primary">{{ 'Save' if l else 'Create list' }}</button></div>
+</form>
+
+{% if l %}
+<section id="words" class="card mt-6">
+  <h2 class="mb-1 text-lg font-bold">Words</h2>
+  <p class="mb-4 text-sm text-ink-soft">The app says the word, then the sentence. Homophones need a sentence so the child knows which one.</p>
+  <ul class="space-y-2">
+    {% for w in l.words if w.for_child_id is none %}
+    <li id="w{{ w.id }}" class="rounded-xl border border-line p-3">
+      <form method="post" action="/parent/lists/{{ l.id }}/words/{{ w.id }}" class="grid gap-2 sm:grid-cols-[10rem_1fr_auto_auto] sm:items-center">
+        <input name="word" class="field font-serif font-bold" value="{{ w.word }}" aria-label="Word">
+        <input name="sentence" class="field" value="{{ w.sentence }}" placeholder="Example sentence" aria-label="Example sentence">
+        <label class="flex items-center gap-1 text-sm whitespace-nowrap"><input type="checkbox" name="homophone" value="true" {% if w.homophone %}checked{% endif %}> Homophone</label>
+        <button class="btn-ghost btn-sm">Save</button>
+      </form>
+      {% if w.homophone and not w.sentence %}<p class="mt-1 text-xs text-amber-700">Needs a sentence.</p>{% endif %}
+      <form method="post" action="/parent/lists/{{ l.id }}/words/{{ w.id }}/delete" class="mt-1">
+        <button class="text-xs text-ink-soft hover:text-bad" data-confirm="Remove “{{ w.word }}”?">Remove</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <form method="post" action="/parent/lists/{{ l.id }}/words" class="mt-4 flex flex-col gap-2 sm:flex-row">
+    <textarea name="words" rows="2" class="field font-serif" placeholder="Add words: one per line or comma-separated"></textarea>
+    <button class="btn-soft">Add</button>
+  </form>
+  {% set carried = l.words|rejectattr('for_child_id', 'none')|list %}
+  {% if carried %}
+  <h3 class="mt-6 text-sm font-bold uppercase tracking-wide text-ink-soft">Review words carried forward</h3>
+  <ul class="mt-2 flex flex-wrap gap-2 text-sm">
+    {% for w in carried %}<li class="pill bg-amber-50 text-amber-800">{{ w.word }} · {{ child_by_id[w.for_child_id].name if w.for_child_id in child_by_id else '?' }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+</section>
+
+<section class="card mt-6">
+  <h2 class="mb-3 text-lg font-bold">Progress</h2>
+  <ul class="divide-y divide-line">
+    {% for a in l.assignments %}
+    <li class="flex items-center justify-between py-2">
+      <span>{{ a.child.avatar }} {{ a.child.name }}</span>
+      <a href="/parent/spelling/{{ a.id }}" class="text-sm font-semibold text-accent hover:underline">{{ a.status|replace('_', ' ') }} · words & attempts →</a>
+    </li>
+    {% else %}<li class="py-2 text-sm text-ink-soft">Not assigned yet.</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

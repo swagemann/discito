@@ -1,0 +1,16 @@
+[project]
+name = "memoria-whisper"
+version = "0.1.0"
+description = "faster-whisper transcription sidecar for Memoria (internal network only)."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.12",
+    "faster-whisper>=1.1.0",
+    # faster-whisper 1.2.x calls av.open(metadata_errors=...), which PyAV 15+ removed.
+    "av>=13,<14.3",  # 14.3+ ships no manylinux wheels; slim images can't build it
+]
+
+[tool.uv]
+package = false

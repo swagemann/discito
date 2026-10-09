@@ -1,0 +1,69 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import avatar %}
+{% block page_title %}Kids{% endblock %}
+
+{% macro child_form(c, action, submit) %}
+<form method="post" action="{{ action }}" class="grid gap-3 sm:grid-cols-2">
+  <div>
+    <label class="label">Name</label>
+    <input name="name" class="field" required value="{{ c.name if c else '' }}">
+  </div>
+  <div>
+    <label class="label">Avatar</label>
+    <div class="flex flex-wrap gap-1">
+      {% for a in avatars %}
+      <label class="cursor-pointer">
+        <input type="radio" name="avatar" value="{{ a }}" class="peer sr-only" {% if (c and c.avatar == a) or (not c and loop.first) %}checked{% endif %}>
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-xl ring-accent peer-checked:ring-2 peer-checked:bg-accent-soft">{{ a }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <label class="label">Color</label>
+    <select name="color" class="field">
+      {% for col in colors %}<option value="{{ col }}" {% if c and c.color == col %}selected{% endif %}>{{ col }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="label" title="How many new lines unlock per step">Chunk size</label>
+      <input name="chunk_size" type="number" min="1" max="10" class="field" value="{{ c.chunk_size if c else 1 }}">
+    </div>
+    <div>
+      <label class="label">Voice speed</label>
+      <input name="tts_rate" type="number" min="0.5" max="1.5" step="0.05" class="field" value="{{ c.tts_rate if c else 0.9 }}">
+    </div>
+  </div>
+  <label class="flex items-center gap-2 text-sm sm:col-span-2">
+    <input type="checkbox" name="show_text" value="true" {% if c and c.show_text %}checked{% endif %}>
+    Show the text during partial practice (default: hidden, peek allowed and logged)
+  </label>
+  <div class="sm:col-span-2"><button class="btn-primary">{{ submit }}</button></div>
+</form>
+{% endmacro %}
+
+{% block content %}
+<h1 class="mb-4 text-2xl font-bold">Kids</h1>
+<div class="space-y-4">
+  {% for c in children %}
+  <details class="card">
+    <summary class="flex cursor-pointer items-center gap-3">
+      {{ avatar(c, "h-10 w-10 text-2xl") }}
+      <span class="text-lg font-bold">{{ c.name }}</span>
+      <span class="ml-auto text-sm text-ink-soft">chunk {{ c.chunk_size }} · voice {{ c.tts_rate }}</span>
+    </summary>
+    <div class="mt-4 border-t border-line pt-4">
+      {{ child_form(c, "/parent/children/" ~ c.id, "Save") }}
+      <form method="post" action="/parent/children/{{ c.id }}/archive" class="mt-3">
+        <button class="btn-danger btn-sm" data-confirm="Hide {{ c.name }}'s profile? Progress is kept.">Archive profile</button>
+      </form>
+    </div>
+  </details>
+  {% endfor %}
+  <section class="card">
+    <h2 class="mb-3 text-lg font-bold">Add a child</h2>
+    {{ child_form(None, "/parent/children", "Add") }}
+  </section>
+</div>
+{% endblock %}

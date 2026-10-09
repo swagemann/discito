@@ -1,0 +1,56 @@
+# Memoria on Coolify (Docker Compose build pack) — and local prod-like runs:
+#   docker compose --env-file .env.production up --build
+# Real secrets live in .env.production (gitignored) — never commit it.
+name: memoria
+
+services:
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: sqlite:////data/memoria.db
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY}
+      PARENT_PASSWORD: ${PARENT_PASSWORD:?set PARENT_PASSWORD}
+      HOUSEHOLD_PASSWORD: ${HOUSEHOLD_PASSWORD:-}
+      TIMEZONE: ${TIMEZONE:-America/Los_Angeles}
+      WHISPER_URL: http://whisper:9000
+    volumes:
+      - memoria-data:/data
+    depends_on:
+      whisper:
+        condition: service_healthy
+    networks: [default, internal]
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  whisper:
+    build:
+      context: ./whisper
+      args:
+        WHISPER_MODEL: ${WHISPER_MODEL:-small.en}
+    restart: unless-stopped
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-small.en}
+      WHISPER_CPU_THREADS: ${WHISPER_CPU_THREADS:-0}
+    # Internal only: no ports, no domain. The app reaches it at http://whisper:9000.
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+networks:
+  internal:
+    internal: true
+
+volumes:
+  memoria-data:

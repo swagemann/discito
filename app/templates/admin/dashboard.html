@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import avatar, status_pill %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+{% if not cards %}
+<div class="card text-center">
+  <p class="mb-4 text-ink-soft">Start by adding your kids, then a passage or spelling list.</p>
+  <a href="/parent/children" class="btn-primary">Add a child</a>
+</div>
+{% endif %}
+<div class="space-y-8">
+{% for card in cards %}
+  {% set c = card.child %}
+  <section class="card">
+    <header class="mb-4 flex items-center gap-3">
+      {{ avatar(c, "h-11 w-11 text-2xl") }}
+      <h2 class="text-xl font-bold">{{ c.name }}</h2>
+    </header>
+    <div class="grid gap-6 lg:grid-cols-5">
+      <div class="lg:col-span-3">
+        <h3 class="mb-2 text-sm font-bold uppercase tracking-wide text-ink-soft">Assignments</h3>
+        {% if card.rows %}
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-left text-ink-soft">
+            <tr><th class="py-1 pr-2 font-semibold">Item</th><th class="pr-2 font-semibold">Status</th><th class="pr-2 font-semibold">Done</th><th class="pr-2 font-semibold">Streak</th><th class="font-semibold">Due</th></tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+          {% for r in card.rows %}
+            <tr>
+              <td class="py-2 pr-2">
+                <a class="font-semibold hover:underline" href="/parent/{{ 'recite' if r.kind == 'recite' else 'spelling' }}/{{ r.assignment_id }}">{{ '📜' if r.kind == 'recite' else '✏️' }} {{ r.title }}</a>
+                {% if r.flagged %}<span class="ml-1 text-xs text-amber-700">🔸{{ r.flagged }}</span>{% endif %}
+              </td>
+              <td class="pr-2">{{ status_pill(r) }}</td>
+              <td class="pr-2 tabular-nums">{{ r.percent }}%</td>
+              <td class="pr-2 tabular-nums">{% if r.streak %}🔥 {{ r.streak }}d{% else %}<span class="text-ink-soft">—</span>{% endif %}</td>
+              <td class="whitespace-nowrap {{ r.due|due_class }}">{{ r.due|fdate }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        </div>
+        {% else %}<p class="text-sm text-ink-soft">Nothing assigned.</p>{% endif %}
+      </div>
+      <div class="lg:col-span-2">
+        <h3 class="mb-2 text-sm font-bold uppercase tracking-wide text-ink-soft">Trouble spots</h3>
+        {% if card.trouble %}
+        <ul class="space-y-2 text-sm">
+          {% for t in card.trouble %}
+          <li class="flex items-start gap-2 rounded-xl {{ 'bg-amber-50' if t.flagged else 'bg-stone-50' }} px-3 py-2">
+            <span aria-hidden="true">{{ '📜' if t.kind == 'line' else '✏️' }}</span>
+            <div class="min-w-0 flex-1">
+              <div class="{{ 'font-serif' if t.kind == 'line' else 'font-serif font-bold' }} line-clamp-2">{{ t.label }}</div>
+              <div class="text-xs text-ink-soft">{{ t.context }} · missed {{ t.misses }}/{{ t.attempts }}</div>
+            </div>
+            <span class="whitespace-nowrap text-xs font-semibold {{ 'text-bad' if t.trend == 'up' else 'text-good' if t.trend == 'down' else 'text-ink-soft' }}"
+                  title="{{ 'getting harder' if t.trend == 'up' else 'improving' if t.trend == 'down' else 'steady' }}">
+              {{ '▲' if t.trend == 'up' else '▼' if t.trend == 'down' else '•' }} {{ (t.score * 100)|round|int }}
+            </span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="text-sm text-ink-soft">No misses yet.</p>{% endif %}
+      </div>
+    </div>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

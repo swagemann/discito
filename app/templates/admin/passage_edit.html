@@ -1,0 +1,109 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ p.title if p else 'New passage' }}{% endblock %}
+{% block content %}
+<a href="/parent/passages" class="text-sm text-ink-soft">← Passages</a>
+<h1 class="mb-4 mt-1 text-2xl font-bold">{{ p.title if p else 'New passage' }}</h1>
+
+<form method="post" action="{{ '/parent/passages/' ~ p.id if p else '/parent/passages' }}" class="card grid gap-4 sm:grid-cols-2">
+  <div>
+    <label class="label" for="title">Title</label>
+    <input id="title" name="title" class="field" required value="{{ p.title if p else '' }}" placeholder="The Lord is my Shepherd">
+  </div>
+  <div>
+    <label class="label" for="reference">Source / reference</label>
+    <input id="reference" name="reference" class="field" value="{{ p.reference if p else '' }}" placeholder="Psalm 23 · Robert Frost">
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="label" for="type">Type</label>
+      <select id="type" name="type" class="field">
+        <option value="poem" {% if p and p.type == 'poem' %}selected{% endif %}>Poem</option>
+        <option value="verse" {% if p and p.type == 'verse' %}selected{% endif %}>Verse (scripture)</option>
+      </select>
+    </div>
+    <div>
+      <label class="label" for="chunk_unit">Split by</label>
+      <select id="chunk_unit" name="chunk_unit" class="field">
+        <option value="">Default for type</option>
+        {% for u in units %}<option value="{{ u }}" {% if p and p.chunk_unit == u %}selected{% endif %}>{{ 'verse number' if u == 'verse' else u }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="grid grid-cols-3 gap-3">
+    <div>
+      <label class="label" for="due_date">Due</label>
+      <input id="due_date" name="due_date" type="date" class="field" value="{{ p.due_date.isoformat() if p and p.due_date else '' }}">
+    </div>
+    <div>
+      <label class="label" for="pass_threshold" title="Matched-word rate needed for a clean run">Pass %</label>
+      <input id="pass_threshold" name="pass_threshold" type="number" min="50" max="100" class="field" value="{{ ((p.pass_threshold if p else 1) * 100)|round|int }}">
+    </div>
+    <div>
+      <label class="label" for="k_required" title="Consecutive clean full runs to pass">Clean runs</label>
+      <input id="k_required" name="k_required" type="number" min="1" max="10" class="field" value="{{ p.k_required if p else 3 }}">
+    </div>
+  </div>
+  <div class="sm:col-span-2">
+    <label class="label" for="text">Text</label>
+    <textarea id="text" name="text" rows="12" class="field font-serif" required placeholder="Paste the passage. Poems: one line per line. Scripture: keep the verse numbers.">{{ p.text if p else '' }}</textarea>
+    {% if p %}<p class="mt-1 text-xs text-ink-soft">Editing the text re-splits it. Kids keep their progress up to the first changed section.</p>{% endif %}
+  </div>
+  <fieldset class="sm:col-span-2">
+    <legend class="label">Assigned to</legend>
+    <div class="flex flex-wrap gap-3">
+      {% for c in children %}
+      <label class="flex items-center gap-2 rounded-xl border border-line px-3 py-2">
+        <input type="checkbox" name="child_ids" value="{{ c.id }}" {% if c.id in assigned %}checked{% endif %}> {{ c.avatar }} {{ c.name }}
+      </label>
+      {% else %}<span class="text-sm text-ink-soft">Add kids first.</span>{% endfor %}
+    </div>
+  </fieldset>
+  <div class="sm:col-span-2"><button class="btn-primary">{{ 'Save' if p else 'Create passage' }}</button></div>
+</form>
+
+{% if p %}
+<section id="sections" class="card mt-6">
+  <div class="mb-3 flex items-center gap-3">
+    <h2 class="text-lg font-bold">Sections ({{ p.sections|length }})</h2>
+    <form method="post" action="/parent/passages/{{ p.id }}/sections/auto" class="ml-auto">
+      <button class="btn-ghost btn-sm" data-confirm="Re-split automatically? Manual merges/splits are lost.">Auto re-split</button>
+    </form>
+  </div>
+  <ol class="space-y-2">
+    {% for s in p.sections %}
+    <li class="rounded-xl border border-line p-3">
+      <div class="flex gap-3">
+        <span class="w-6 shrink-0 text-right text-sm font-bold text-ink-soft">{{ loop.index }}</span>
+        <p class="flex-1 whitespace-pre-line font-serif">{{ s.text }}</p>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-2 pl-9">
+        {% if not loop.last %}
+        <form method="post" action="/parent/passages/{{ p.id }}/sections/merge"><input type="hidden" name="index" value="{{ loop.index0 }}"><button class="btn-ghost btn-sm">Merge with next ↓</button></form>
+        {% endif %}
+        <details>
+          <summary class="btn-ghost btn-sm list-none">Split…</summary>
+          <form method="post" action="/parent/passages/{{ p.id }}/sections/split" class="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input type="hidden" name="index" value="{{ loop.index0 }}">
+            <textarea name="marked" rows="2" class="field font-serif" aria-label="Put | where the split goes">{{ s.text }}</textarea>
+            <button class="btn-soft btn-sm">Split at |</button>
+          </form>
+        </details>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="card mt-6">
+  <h2 class="mb-3 text-lg font-bold">Progress</h2>
+  <ul class="divide-y divide-line">
+    {% for a in p.assignments %}
+    <li class="flex items-center justify-between py-2">
+      <span>{{ a.child.avatar }} {{ a.child.name }}</span>
+      <a href="/parent/recite/{{ a.id }}" class="text-sm font-semibold text-accent hover:underline">{{ a.status|replace('_', ' ') }} · attempts & settings →</a>
+    </li>
+    {% else %}<li class="py-2 text-sm text-ink-soft">Not assigned yet.</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

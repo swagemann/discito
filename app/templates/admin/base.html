@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}Parent{% endblock %} · Memoria{% endblock %}
+{% block body %}
+<header class="border-b border-line bg-surface">
+  <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
+    <a href="/" class="font-bold">Memoria</a>
+    {% set nav = [("/parent", "Dashboard"), ("/parent/passages", "Passages"), ("/parent/lists", "Spelling"), ("/parent/children", "Kids")] %}
+    <nav class="flex flex-wrap gap-1 text-sm font-semibold" aria-label="Parent">
+      {% for href, label in nav %}
+      {% set on = request.url.path == href or (href != "/parent" and request.url.path.startswith(href)) %}
+      <a href="{{ href }}" class="rounded-lg px-3 py-1.5 {{ 'bg-accent-soft text-accent' if on else 'text-ink-soft hover:text-ink' }}" {% if on %}aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <form method="post" action="/parent/logout" class="ml-auto"><button class="btn-ghost btn-sm">Lock</button></form>
+  </div>
+</header>
+<main class="mx-auto max-w-5xl px-4 py-6">
+  {% block content %}{% endblock %}
+</main>
+{% endblock %}

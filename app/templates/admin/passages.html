@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Passages{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-center gap-3">
+  <h1 class="text-2xl font-bold">{{ 'Archived passages' if archived else 'Passages' }}</h1>
+  <a href="/parent/passages{{ '' if archived else '?archived=true' }}" class="text-sm text-ink-soft underline">{{ 'Show active' if archived else 'Show archived' }}</a>
+  <a href="/parent/passages/new" class="btn-primary btn-sm ml-auto">+ New passage</a>
+</div>
+{% if passages %}
+<ul class="space-y-2">
+  {% for p in passages %}
+  <li class="card flex items-center gap-3 py-3">
+    {% if not archived %}
+    <div class="flex flex-col">
+      <form method="post" action="/parent/passages/{{ p.id }}/move"><input type="hidden" name="direction" value="-1"><button class="px-1 text-ink-soft hover:text-ink" aria-label="Move up" {% if loop.first %}disabled{% endif %}>▲</button></form>
+      <form method="post" action="/parent/passages/{{ p.id }}/move"><input type="hidden" name="direction" value="1"><button class="px-1 text-ink-soft hover:text-ink" aria-label="Move down" {% if loop.last %}disabled{% endif %}>▼</button></form>
+    </div>
+    {% endif %}
+    <a href="/parent/passages/{{ p.id }}" class="min-w-0 flex-1">
+      <div class="font-bold">{{ p.title }} <span class="font-normal text-ink-soft">{{ p.reference }}</span></div>
+      <div class="text-sm text-ink-soft">{{ p.type }} · {{ p.sections|length }} sections · {{ p.assignments|length }} assigned{% if p.due_date %} · <span class="{{ p.due_date|due_class }}">due {{ p.due_date|fdate }}</span>{% endif %}</div>
+    </a>
+    <form method="post" action="/parent/passages/{{ p.id }}/archive">
+      <input type="hidden" name="archived" value="{{ 'false' if archived else 'true' }}">
+      <button class="btn-ghost btn-sm">{{ 'Restore' if archived else 'Archive' }}</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="card text-ink-soft">No passages{{ ' archived' if archived else ' yet' }}.</p>
+{% endif %}
+{% endblock %}

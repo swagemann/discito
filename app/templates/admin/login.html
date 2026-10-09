@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Parent login · Memoria{% endblock %}
+{% block body %}
+<main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4">
+  <a href="/" class="mb-6 text-center text-sm text-ink-soft">← Back to kids</a>
+  <form method="post" action="/parent/login" class="card space-y-4">
+    <h1 class="text-2xl font-bold">Parent area</h1>
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="label" for="pw">Password</label>
+    <input id="pw" name="password" type="password" class="field" autofocus required autocomplete="current-password">
+    {% if error %}<p class="text-sm text-bad">Wrong password.</p>{% endif %}
+    <button class="btn-primary w-full">Unlock</button>
+  </form>
+</main>
+{% endblock %}

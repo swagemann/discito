@@ -1,0 +1,12 @@
+{# Attempted sections with missed words marked. Expects: attempt, sections (id → Section). #}
+<div class="font-serif">
+{% for sid in attempt.section_ids %}
+  {% set s = sections.get(sid) %}
+  {% if s %}
+  {% set missed = attempt.missed_words|selectattr('section_id', 'equalto', sid)|map(attribute='word')|list %}
+  <p><sup class="mr-1 font-sans text-xs text-ink-soft">{{ s.ordinal + 1 }}</sup>{% for w in s.text.split() %}<span class="{{ 'w-miss' if loop.index0 in missed else '' }}">{{ w }}</span> {% endfor %}</p>
+  {% else %}
+  <p class="text-xs text-ink-soft">(section since edited)</p>
+  {% endif %}
+{% endfor %}
+</div>

@@ -1,0 +1,72 @@
+{% extends "admin/base.html" %}
+{% block page_title %}{{ a.passage.title }} · {{ a.child.name }}{% endblock %}
+{% block content %}
+<a href="/parent/passages/{{ a.passage_id }}" class="text-sm text-ink-soft">← {{ a.passage.title }}</a>
+<div class="mb-4 mt-1 flex flex-wrap items-center gap-3">
+  <h1 class="text-2xl font-bold">{{ a.child.avatar }} {{ a.child.name }} · {{ a.passage.title }}</h1>
+  <span class="pill-{{ a.status }}">{{ label }}</span>
+</div>
+
+<div class="grid gap-6 lg:grid-cols-3">
+  <section class="card lg:col-span-1">
+    <h2 class="mb-3 text-lg font-bold">Settings</h2>
+    <form method="post" action="/parent/recite/{{ a.id }}/settings" class="space-y-3">
+      <div>
+        <label class="label" for="pt">Pass threshold (matched words %)</label>
+        <input id="pt" name="pass_threshold" type="number" min="50" max="100" class="field" value="{{ (a.pass_threshold * 100)|round|int }}">
+      </div>
+      <div>
+        <label class="label" for="k">Clean full runs to pass (K)</label>
+        <input id="k" name="k_required" type="number" min="1" max="10" class="field" value="{{ a.k_required }}">
+      </div>
+      <button class="btn-primary btn-sm">Save</button>
+    </form>
+    {% if a.status in ('full', 'passed') %}
+    <form method="post" action="/parent/recite/{{ a.id }}/reset" class="mt-4 border-t border-line pt-4">
+      <button class="btn-danger btn-sm" data-confirm="Send {{ a.child.name }} back to partial practice on the last lines?">Reset to Partial</button>
+    </form>
+    {% endif %}
+
+    <h2 class="mb-2 mt-6 text-lg font-bold">Lines</h2>
+    <ol class="space-y-1 text-sm">
+      {% for s in a.passage.sections %}
+      {% set st = lines.get(s.id) %}
+      <li class="flex gap-2 rounded-lg px-2 py-1 {{ 'bg-amber-50' if st and st.flagged else '' }}">
+        <span class="w-5 shrink-0 text-right text-ink-soft">{{ loop.index }}</span>
+        <span class="line-clamp-1 flex-1 font-serif">{{ s.text }}</span>
+        {% if st %}<span class="whitespace-nowrap text-xs text-ink-soft" title="misses / attempts">{{ '🔸 ' if st.flagged }}{{ st.miss_count }}/{{ st.attempt_count }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section class="lg:col-span-2">
+    <h2 class="mb-3 text-lg font-bold">Attempts</h2>
+    {% if not attempts %}<p class="card text-ink-soft">No attempts yet.</p>{% endif %}
+    <ul class="space-y-3">
+      {% for at in attempts %}
+      <li id="a{{ at.id }}" class="card">
+        <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
+          <span class="pill {{ 'bg-emerald-100 text-emerald-800' if at.effective_verdict else 'bg-rose-100 text-rose-800' }}">{{ 'Clean' if at.effective_verdict else 'Missed' }}</span>
+          {% if at.override is not none %}<span class="pill bg-violet-100 text-violet-800">overridden (was {{ 'clean' if at.verdict else 'missed' }})</span>{% endif %}
+          <span class="font-semibold">{{ at.scope|scope_label }}</span>
+          <span class="text-ink-soft">{{ at.matched }}/{{ at.total }} words</span>
+          {% if at.peeked %}<span class="pill bg-stone-100 text-stone-700">👀 peeked</span>{% endif %}
+          {% if at.stt_ms %}<span class="text-xs text-ink-soft">{{ at.audio_seconds|round(1) if at.audio_seconds else '?' }}s audio · graded in {{ (at.stt_ms / 1000)|round(1) }}s</span>{% endif %}
+          <span class="ml-auto text-xs text-ink-soft">{{ at.created_at|localtime }}</span>
+        </div>
+        {% with attempt=at %}{% include "_attempt_text.html" %}{% endwith %}
+        <p class="mt-2 rounded-lg bg-stone-50 px-3 py-2 text-sm"><span class="font-semibold text-ink-soft">Heard:</span> {{ at.transcript or '(nothing)' }}</p>
+        <form method="post" action="/parent/attempts/{{ at.id }}/override" class="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <span class="text-ink-soft">Override:</span>
+          <button name="value" value="correct" class="btn-ghost btn-sm {{ 'ring-2 ring-good' if at.override == true }}">✓ Correct</button>
+          <button name="value" value="incorrect" class="btn-ghost btn-sm {{ 'ring-2 ring-bad' if at.override == false }}">✗ Incorrect</button>
+          {% if at.override is not none %}<button name="value" value="clear" class="btn-ghost btn-sm">Clear</button>{% endif %}
+          {% if at.id == latest_id and at.scope != 'review' %}<span class="text-xs text-ink-soft">Latest attempt: overriding also updates progress.</span>{% endif %}
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

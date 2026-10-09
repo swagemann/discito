@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar %}
+{% block title %}{{ a.spelling_list.title }} · {{ child.name }}{% endblock %}
+{% block head %}<script src="/static/js/spell.js?v={{ v }}" defer></script>{% endblock %}
+{% block body %}
+<main id="spell" class="mx-auto flex min-h-dvh max-w-xl flex-col px-4 py-5"
+      data-api="/api/spell/{{ a.id }}" data-rate="{{ child.tts_rate }}">
+  <header class="mb-4 flex items-center gap-3">
+    <a href="/c/{{ child.id }}?tab=spelling" class="btn-ghost btn-sm" aria-label="Back">←</a>
+    {{ avatar(child, "h-10 w-10 text-2xl") }}
+    <div class="min-w-0 flex-1">
+      <h1 class="truncate text-xl font-bold">{{ a.spelling_list.title }}</h1>
+      <p data-el="sub" class="text-sm text-ink-soft"></p>
+    </div>
+  </header>
+
+  <!-- Mode chooser (no session running) -->
+  <section data-el="menu" class="hidden space-y-4">
+    <div class="card">
+      <div class="mb-1 flex justify-between text-sm font-semibold text-ink-soft">
+        <span data-el="known-label"></span><span data-el="status-label"></span>
+      </div>
+      <progress class="bar" data-el="known-bar" max="100" value="0"></progress>
+      <div data-el="last-test" class="mt-4 hidden"></div>
+    </div>
+    <div class="grid gap-3 sm:grid-cols-3">
+      <button type="button" class="btn-ghost flex-col py-5" data-mode="learn"><span class="text-3xl">📖</span>Learn<span class="text-xs font-normal text-ink-soft">See it, copy it</span></button>
+      <button type="button" class="btn-primary flex-col py-5" data-mode="practice"><span class="text-3xl">🎧</span>Practice<span class="text-xs font-normal opacity-80">Hear it, spell it</span></button>
+      <button type="button" class="btn-soft flex-col py-5" data-mode="test"><span class="text-3xl">🏁</span>Test<span class="text-xs font-normal">One try each</span></button>
+    </div>
+  </section>
+
+  <!-- Running session -->
+  <section data-el="session" class="card hidden flex-1">
+    <div class="mb-6 flex items-center justify-between text-sm font-semibold text-ink-soft">
+      <span data-el="round"></span><span data-el="left"></span>
+    </div>
+    <div class="mb-6 flex flex-col items-center gap-3 text-center">
+      <p data-el="show-word" class="hidden font-serif text-5xl font-bold tracking-wide"></p>
+      <button type="button" class="btn-soft text-lg" data-el="say">🔈 Hear it again</button>
+      <p data-el="sentence-hint" class="hidden text-sm text-ink-soft"></p>
+    </div>
+    <form data-el="form" class="space-y-3" autocomplete="off">
+      <input name="typed" class="field py-4 text-center font-serif text-3xl tracking-wider" aria-label="Type the word"
+             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" enterkeyhint="go">
+      <button class="btn-primary w-full text-lg">Check</button>
+    </form>
+    <div data-el="feedback" class="mt-4 hidden rounded-2xl p-4 text-center" aria-live="polite"></div>
+    <button type="button" class="btn-ghost btn-sm mt-6" data-el="stop">Stop for now</button>
+  </section>
+
+  <!-- Test results -->
+  <section data-el="results" class="card hidden"></section>
+</main>
+{% endblock %}

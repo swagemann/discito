@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import avatar %}
+{% block title %}{{ a.passage.title }} · {{ child.name }}{% endblock %}
+{% block head %}<script src="/static/js/recite.js?v={{ v }}" defer></script>{% endblock %}
+{% block body %}
+<main id="recite" class="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 py-5"
+      data-api="/api/recite/{{ a.id }}" data-typed="{{ '1' if typed_fallback else '' }}">
+  <header class="mb-4 flex items-center gap-3">
+    <a href="/c/{{ child.id }}?tab=recite" class="btn-ghost btn-sm" aria-label="Back">←</a>
+    {{ avatar(child, "h-10 w-10 text-2xl") }}
+    <div class="min-w-0 flex-1">
+      <h1 class="truncate text-xl font-bold">{{ a.passage.title }}</h1>
+      {% if a.passage.reference %}<p class="truncate text-sm text-ink-soft">{{ a.passage.reference }}</p>{% endif %}
+    </div>
+  </header>
+
+  <div class="mb-4">
+    <div class="mb-1 flex justify-between text-sm font-semibold text-ink-soft">
+      <span data-el="progress-label">Loading…</span>
+      <span data-el="progress-right"></span>
+    </div>
+    <progress class="bar" data-el="progress" max="100" value="0"></progress>
+  </div>
+
+  <section class="card flex-1" aria-live="polite">
+    <p data-el="step-kicker" class="text-sm font-bold uppercase tracking-wide text-accent"></p>
+    <h2 data-el="step-title" class="mb-4 text-2xl font-bold"></h2>
+    <div data-el="text" class="verse min-h-24"></div>
+    <div data-el="result" class="mt-4 hidden rounded-2xl p-4"></div>
+  </section>
+
+  <div class="sticky bottom-0 -mx-4 mt-4 bg-paper/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <button type="button" class="btn-soft" data-el="listen">🔈 Listen</button>
+      <button type="button" class="btn-ghost" data-el="peek" aria-pressed="false">👀 Peek</button>
+      <button type="button" class="btn-primary" data-el="ready">I'm ready</button>
+      <button type="button" data-el="mic"
+              class="btn h-20 w-20 rounded-full bg-bad p-0 text-3xl text-white shadow-lg"
+              aria-label="Record">🎙️</button>
+    </div>
+    <p data-el="mic-hint" class="mt-2 text-center text-sm text-ink-soft"></p>
+    <form data-el="typed-form" class="mt-3 hidden gap-2">
+      <input class="field" name="typed" placeholder="Dev: type what was said" autocomplete="off">
+      <button class="btn-ghost btn-sm">Grade</button>
+    </form>
+  </div>
+</main>
+{% endblock %}
