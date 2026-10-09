@@ -1,4 +1,4 @@
-"""Memoria — Verse Memorizer.
+"""Discito — Verse Memorizer.
 
 FastAPI + Jinja2 app for one household: children practice reciting passages
 (graded by a faster-whisper sidecar) and spelling lists; a parent manages
@@ -42,13 +42,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Memoria", lifespan=lifespan, docs_url=None, redoc_url=None)
+    app = FastAPI(title="Discito", lifespan=lifespan, docs_url=None, redoc_url=None)
 
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.secret_key,
-        session_cookie="memoria",
+        session_cookie="discito",
         max_age=180 * 24 * 3600,
         same_site="lax",
         https_only=settings.cookie_secure,
@@ -63,6 +63,8 @@ def create_app() -> FastAPI:
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "same-origin")
         response.headers.setdefault("Permissions-Policy", "microphone=(self), camera=()")
+        if settings.cookie_secure:
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000")
         return response
 
     @app.exception_handler(LoginRequired)

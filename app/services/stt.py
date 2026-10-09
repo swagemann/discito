@@ -15,7 +15,16 @@ from app.core.config import get_settings
 
 
 class SttError(RuntimeError):
-    pass
+    """The sidecar failed. `status` is its HTTP status when it answered at all:
+    4xx means this clip was undecodable, anything else means the service is down."""
+
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+
+    @property
+    def bad_clip(self) -> bool:
+        return self.status is not None and 400 <= self.status < 500
 
 
 @dataclass
@@ -37,6 +46,8 @@ def transcribe(audio: bytes, content_type: str, prompt: str) -> Transcript:
         )
         resp.raise_for_status()
         body = resp.json()
+    except httpx.HTTPStatusError as exc:
+        raise SttError(f"transcription failed: {exc}", exc.response.status_code) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise SttError(f"transcription failed: {exc}") from exc
     return Transcript(

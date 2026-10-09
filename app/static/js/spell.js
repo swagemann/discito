@@ -2,7 +2,7 @@
 // test (one strict pass, results at the end). State lives on the server.
 (function () {
   "use strict";
-  const { speak, request, post, el } = window.Memoria;
+  const { speak, request, post, el } = window.Discito;
 
   const root = document.getElementById("spell");
   if (!root) return;

@@ -62,7 +62,7 @@
     return n;
   }
 
-  window.Memoria = { speak, request, post, el };
+  window.Discito = { speak, request, post, el };
 })();
 
 // Confirm destructive admin actions: <button data-confirm="Sure?">.

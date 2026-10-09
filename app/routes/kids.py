@@ -13,22 +13,34 @@ from app.core.config import get_settings
 from app.db.session import get_session
 from app.models import Child, ListAssignment, PassageAssignment
 from app.services import stats
-from app.web import check_password, render, require_household
+from app.web import (
+    TOO_MANY_TRIES,
+    check_password,
+    client_key,
+    login_throttle,
+    render,
+    require_household,
+)
 
 router = APIRouter()
 
 
 @router.get("/unlock")
 def unlock_form(request: Request) -> Any:
-    return render(request, "unlock.html", {"error": False})
+    return render(request, "unlock.html", {"error": None})
 
 
 @router.post("/unlock")
 def unlock(request: Request, password: str = Form("")) -> Any:
-    if check_password(password, get_settings().household_password):
+    key = client_key(request)
+    if login_throttle.blocked(key):
+        return render(request, "unlock.html", {"error": TOO_MANY_TRIES}, status=429)
+    ok = check_password(password, get_settings().household_password)
+    login_throttle.record(key, ok)
+    if ok:
         request.session["household"] = True
         return RedirectResponse("/", status_code=303)
-    return render(request, "unlock.html", {"error": True}, status=401)
+    return render(request, "unlock.html", {"error": "That's not it. Try again."}, status=401)
 
 
 @router.get("/", dependencies=[Depends(require_household)])

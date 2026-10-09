@@ -1,7 +1,7 @@
-# Memoria on Coolify (Docker Compose build pack) — and local prod-like runs:
+# Discito on Coolify (Docker Compose build pack) — and local prod-like runs:
 #   docker compose --env-file .env.production up --build
 # Real secrets live in .env.production (gitignored) — never commit it.
-name: memoria
+name: discito
 
 services:
   app:
@@ -10,17 +10,20 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: prod
-      DATABASE_URL: sqlite:////data/memoria.db
+      DATABASE_URL: sqlite:////data/discito.db
       SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY}
       PARENT_PASSWORD: ${PARENT_PASSWORD:?set PARENT_PASSWORD}
       HOUSEHOLD_PASSWORD: ${HOUSEHOLD_PASSWORD:-}
       TIMEZONE: ${TIMEZONE:-America/Los_Angeles}
       WHISPER_URL: http://whisper:9000
     volumes:
-      - memoria-data:/data
+      - discito-data:/data
+    # Start alongside whisper rather than waiting for it: spelling and the parent
+    # area work without it, and the recite page reports "listening service is down"
+    # until the model is loaded (about a minute on first boot).
     depends_on:
       whisper:
-        condition: service_healthy
+        condition: service_started
     networks: [default, internal]
     expose:
       - "8000"
@@ -53,4 +56,4 @@ networks:
     internal: true
 
 volumes:
-  memoria-data:
+  discito-data:

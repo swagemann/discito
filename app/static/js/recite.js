@@ -3,7 +3,7 @@
 // speaks text, and records audio for grading.
 (function () {
   "use strict";
-  const { speak, request, post, el } = window.Memoria;
+  const { speak, request, post, el } = window.Discito;
 
   const root = document.getElementById("recite");
   if (!root) return;

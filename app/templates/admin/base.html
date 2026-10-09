@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}{% block page_title %}Parent{% endblock %} · Memoria{% endblock %}
+{% block title %}{% block page_title %}Parent{% endblock %} · Discito{% endblock %}
 {% block body %}
 <header class="border-b border-line bg-surface">
   <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
-    <a href="/" class="font-bold">Memoria</a>
+    <a href="/" class="font-bold">Discito</a>
     {% set nav = [("/parent", "Dashboard"), ("/parent/passages", "Passages"), ("/parent/lists", "Spelling"), ("/parent/children", "Kids")] %}
     <nav class="flex flex-wrap gap-1 text-sm font-semibold" aria-label="Parent">
       {% for href, label in nav %}

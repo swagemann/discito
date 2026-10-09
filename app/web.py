@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hmac
+import threading
 import time
+from collections import defaultdict, deque
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -99,6 +101,60 @@ def require_household(request: Request) -> None:
 
 def check_password(given: str, expected: str) -> bool:
     return bool(expected) and hmac.compare_digest(given.encode(), expected.encode())
+
+
+class LoginThrottle:
+    """Per-address lockout for the two password forms.
+
+    Both passwords are short, human-chosen strings behind a public URL, so after
+    `max_failures` wrong guesses inside `window_s` an address is refused until the
+    oldest failure ages out. In-memory: the app runs as one worker for one household.
+    Behind Traefik, uvicorn's --proxy-headers makes `request.client` the real address.
+    """
+
+    def __init__(self, max_failures: int = 5, window_s: float = 15 * 60) -> None:
+        self.max_failures = max_failures
+        self.window_s = window_s
+        self._failures: dict[str, deque[float]] = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def _prune(self, q: deque[float], now: float) -> None:
+        while q and now - q[0] > self.window_s:
+            q.popleft()
+
+    def blocked(self, key: str) -> bool:
+        now = time.monotonic()
+        with self._lock:
+            q = self._failures.get(key)
+            if q is None:
+                return False
+            self._prune(q, now)
+            if not q:
+                del self._failures[key]
+                return False
+            return len(q) >= self.max_failures
+
+    def reset(self) -> None:
+        with self._lock:
+            self._failures.clear()
+
+    def record(self, key: str, ok: bool) -> None:
+        now = time.monotonic()
+        with self._lock:
+            if ok:
+                self._failures.pop(key, None)
+                return
+            q = self._failures[key]
+            self._prune(q, now)
+            q.append(now)
+
+
+login_throttle = LoginThrottle()
+TOO_MANY_TRIES = "Too many tries. Wait a few minutes, then try again."
+
+
+def client_key(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
 def parse_date(raw: str | None) -> date | None:

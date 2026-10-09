@@ -1,4 +1,4 @@
-# Memoria app — FastAPI + Jinja2 on uv. Build context: repo root.
+# Discito app — FastAPI + Jinja2 on uv. Build context: repo root.
 
 # Stage 1: build the Tailwind bundle
 FROM node:22-alpine AS assets
@@ -18,7 +18,7 @@ ENV PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy \
     PATH="/app/.venv/bin:$PATH" \
     APP_ENV=prod \
-    DATABASE_URL=sqlite:////data/memoria.db
+    DATABASE_URL=sqlite:////data/discito.db
 
 # uv binary from the official image. Pinned minor for reproducible builds.
 COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /uvx /bin/

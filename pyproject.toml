@@ -1,5 +1,5 @@
 [project]
-name = "memoria"
+name = "discito"
 version = "0.1.0"
 description = "Verse Memorizer — recitation and spelling practice for one household."
 requires-python = ">=3.12"

@@ -1,4 +1,4 @@
-# Memoria whisper sidecar — faster-whisper on CPU. Build context: ./whisper
+# Discito whisper sidecar — faster-whisper on CPU. Build context: ./whisper
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \

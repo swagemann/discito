@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     household_password: str = ""
 
     # SQLite file on the persistent /data volume in production.
-    database_url: str = "sqlite:///./data/memoria.db"
+    database_url: str = "sqlite:///./data/discito.db"
 
     # faster-whisper sidecar (internal docker network only).
     whisper_url: str = "http://whisper:9000"

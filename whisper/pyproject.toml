@@ -1,7 +1,7 @@
 [project]
-name = "memoria-whisper"
+name = "discito-whisper"
 version = "0.1.0"
-description = "faster-whisper transcription sidecar for Memoria (internal network only)."
+description = "faster-whisper transcription sidecar for Discito (internal network only)."
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",

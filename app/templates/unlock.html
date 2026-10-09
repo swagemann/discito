@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block body %}
 <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4">
-  <h1 class="mb-6 text-center text-3xl font-bold">Memoria</h1>
+  <h1 class="mb-6 text-center text-3xl font-bold">Discito</h1>
   <form method="post" action="/unlock" class="card space-y-4">
     <label class="label" for="pw">Household password</label>
     <input id="pw" name="password" type="password" class="field" autofocus required autocomplete="current-password">
-    {% if error %}<p class="text-sm text-bad">That's not it — try again.</p>{% endif %}
+    {% if error %}<p class="text-sm text-bad">{{ error }}</p>{% endif %}
     <button class="btn-primary w-full">Unlock this device</button>
   </form>
 </main>

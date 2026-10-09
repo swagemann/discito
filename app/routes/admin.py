@@ -29,7 +29,10 @@ from app.services import stats
 from app.web import (
     AVATARS,
     COLORS,
+    TOO_MANY_TRIES,
     check_password,
+    client_key,
+    login_throttle,
     parse_date,
     parse_percent,
     render,
@@ -57,16 +60,25 @@ def _children(db: Session) -> list[Child]:
 
 @router.get("/login")
 def login_form(request: Request, next: str = "/parent") -> Any:
-    return render(request, "admin/login.html", {"next": next, "error": False})
+    return render(request, "admin/login.html", {"next": next, "error": None})
 
 
 @router.post("/login")
 def login(request: Request, password: str = Form(""), next: str = Form("/parent")) -> Any:
-    if check_password(password, get_settings().parent_password):
+    key = client_key(request)
+    if login_throttle.blocked(key):
+        return render(
+            request, "admin/login.html", {"next": next, "error": TOO_MANY_TRIES}, status=429
+        )
+    ok = check_password(password, get_settings().parent_password)
+    login_throttle.record(key, ok)
+    if ok:
         request.session["parent"] = int(time.time())
         request.session["household"] = True
         return back(next if next.startswith("/parent") else "/parent")
-    return render(request, "admin/login.html", {"next": next, "error": True}, status=401)
+    return render(
+        request, "admin/login.html", {"next": next, "error": "Wrong password."}, status=401
+    )
 
 
 @router.post("/logout")

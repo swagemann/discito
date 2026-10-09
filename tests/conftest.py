@@ -39,7 +39,9 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[object]:
     command.upgrade(cfg, "head")
 
     from app.main import create_app
+    from app.web import login_throttle
 
+    login_throttle.reset()
     with TestClient(create_app()) as c:
         yield c
 

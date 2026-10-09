@@ -1,4 +1,4 @@
-# Memoria — Verse Memorizer
+# Discito — Verse Memorizer
 
 Self-hosted app that takes a child from "never seen this poem" to "recited it
 from memory three times clean": TTS reads each line, the child recites the chain
@@ -56,7 +56,7 @@ App tests run through the real Alembic migrations on a fresh SQLite file.
    ports and sits on an internal-only network.
 3. Environment: `SECRET_KEY`, `PARENT_PASSWORD` (required), optionally
    `HOUSEHOLD_PASSWORD`, `TIMEZONE`, `WHISPER_MODEL`.
-4. The named volume `memoria-data` is mounted at `/data`; `/data/memoria.db` is
+4. The named volume `discito-data` is mounted at `/data`; `/data/discito.db` is
    the only state. Add it to the homelab B2 backup job (use `sqlite3 .backup`
    or snapshot while idle; WAL mode is on).
 
@@ -91,6 +91,8 @@ default `small.en`), so first start doesn't download from Hugging Face.
   rolls each child back to the first changed section if they were past it.
 - **Practice / test resume**: leaving a practice round for Learn, Test, or the
   menu keeps its place; a paused test resumes where it stopped.
+- **Password forms lock out an address** after 5 wrong tries in 15 minutes
+  (parent login and household unlock share the counter; it lives in memory).
 - **No audio is persisted.** It is held in memory for the sidecar call only.
   The PRD's "attempt review with audio" conflicts with this; review shows the
   transcript with misses highlighted.

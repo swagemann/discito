@@ -67,16 +67,29 @@ def recite_attempt(
         data = audio.file.read(MAX_AUDIO_BYTES + 1)
         if len(data) > MAX_AUDIO_BYTES:
             raise HTTPException(413, "recording too long")
-        try:
-            result = transcribe(data, audio.content_type or "audio/webm", recite_svc.prompt_for(a))
-        except SttError as exc:
-            log.warning("stt.failed", error=str(exc), assignment_id=a.id)
-            raise HTTPException(502, "Couldn't hear that — the listening service is down.") from exc
-        finally:
-            del data  # audio is never persisted
-        transcript = result.text
-        audio_seconds, stt_ms = result.duration, result.elapsed_ms
-        log.info("stt.done", assignment_id=a.id, audio_s=audio_seconds, stt_ms=stt_ms)
+        if not data:
+            # The recorder produced nothing (tap too quick, muted mic): grade it as
+            # silence so the child sees "I didn't hear anything" instead of an error.
+            transcript = ""
+        else:
+            try:
+                result = transcribe(
+                    data, audio.content_type or "audio/webm", recite_svc.prompt_for(a)
+                )
+            except SttError as exc:
+                log.warning("stt.failed", error=str(exc), assignment_id=a.id, status=exc.status)
+                if exc.bad_clip:
+                    raise HTTPException(
+                        422, "Couldn't make out that recording — try once more."
+                    ) from exc
+                raise HTTPException(
+                    502, "Couldn't hear that — the listening service is down."
+                ) from exc
+            finally:
+                del data  # audio is never persisted
+            transcript = result.text
+            audio_seconds, stt_ms = result.duration, result.elapsed_ms
+            log.info("stt.done", assignment_id=a.id, audio_s=audio_seconds, stt_ms=stt_ms)
     elif get_settings().stt_typed_fallback:
         transcript = typed
     else:

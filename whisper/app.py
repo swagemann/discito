@@ -40,7 +40,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="memoria-whisper", lifespan=lifespan, docs_url=None, redoc_url=None)
+app = FastAPI(title="discito-whisper", lifespan=lifespan, docs_url=None, redoc_url=None)
 
 
 @app.get("/healthz")

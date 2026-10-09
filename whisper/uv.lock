@@ -297,7 +297,7 @@ wheels = [
 ]
 
 [[package]]
-name = "memoria-whisper"
+name = "discito-whisper"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

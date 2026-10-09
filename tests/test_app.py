@@ -307,3 +307,61 @@ def test_security_headers(client: TestClient) -> None:
     r = client.get("/")
     assert "default-src 'self'" in r.headers["content-security-policy"]
     assert "microphone=(self)" in r.headers["permissions-policy"]
+
+
+def test_login_throttle_locks_after_repeated_failures(client: TestClient, monkeypatch: Any) -> None:
+    from app.core.config import get_settings
+    from app.web import login_throttle
+
+    for _ in range(login_throttle.max_failures):
+        assert client.post("/parent/login", data={"password": "nope"}).status_code == 401
+    # Locked out: even the right password is refused until the window passes.
+    r = client.post("/parent/login", data={"password": "parent-pw"}, follow_redirects=False)
+    assert r.status_code == 429 and "Too many tries" in r.text
+    # The household unlock form shares the same per-address lockout.
+    monkeypatch.setattr(get_settings(), "household_password", "family")
+    assert client.post("/unlock", data={"password": "family"}).status_code == 429
+    # Once the failures age out, a correct password gets in and clears the slate.
+    monkeypatch.setattr(login_throttle, "window_s", -1.0)
+    r = client.post("/parent/login", data={"password": "parent-pw"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_empty_recording_grades_as_silence(client: TestClient) -> None:
+    login(client)
+    kid = add_child(client, "Ivy")
+    aid = assignment_ids(add_passage(client, [kid]))[kid]
+    client.post(f"/api/recite/{aid}/ready")
+    r = client.post(
+        f"/api/recite/{aid}/attempt",
+        files={"audio": ("clip.webm", b"", "audio/webm")},
+        data={"peeked": "false"},
+    )
+    assert r.status_code == 200, r.text
+    a = r.json()["attempt"]
+    assert a["verdict"] is False and a["transcript"] == ""
+
+
+def test_stt_failures_are_told_apart(client: TestClient, monkeypatch: Any) -> None:
+    from app.routes import api
+    from app.services.stt import SttError
+
+    login(client)
+    kid = add_child(client, "Jo")
+    aid = assignment_ids(add_passage(client, [kid]))[kid]
+    client.post(f"/api/recite/{aid}/ready")
+
+    def post(status: int | None) -> int:
+        def boom(*_a: Any, **_k: Any) -> Any:
+            raise SttError("nope", status)
+
+        monkeypatch.setattr(api, "transcribe", boom)
+        r = client.post(
+            f"/api/recite/{aid}/attempt",
+            files={"audio": ("clip.webm", b"\x1aE\xdf\xa3", "audio/webm")},
+        )
+        return r.status_code
+
+    assert post(422) == 422  # undecodable clip: the child should just try again
+    assert post(None) == 502  # sidecar unreachable
+    assert post(500) == 502
