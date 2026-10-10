@@ -19,7 +19,7 @@ from app.core.config import get_settings
 BASE_DIR = Path(__file__).resolve().parent
 
 # Bump when static assets change to bust browser caches.
-ASSET_VERSION = "2"
+ASSET_VERSION = "3"
 
 AVATARS = [
     "🦉", "🦊", "🦝", "🐻", "🐼", "🐨", "🐯", "🦁", "🐱", "🐶", "🐸", "🐢",

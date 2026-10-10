@@ -12,7 +12,7 @@
   const ui = {
     progress: $("progress"), progressLabel: $("progress-label"), progressRight: $("progress-right"),
     kicker: $("step-kicker"), title: $("step-title"), text: $("text"), result: $("result"),
-    listen: $("listen"), ready: $("ready"), mic: $("mic"),
+    listen: $("listen"), redo: $("redo"), ready: $("ready"), mic: $("mic"),
     typedForm: $("typed-form"),
   };
 
@@ -22,6 +22,7 @@
   let helped = false;
   let busy = false;
   let starting = false; // mic permission/stream requested, recorder not yet live
+  let stream = null; // mic stream; kept across mulligans so a restart is instant
   let recorder = null;
   let recTimer = null;
   const MAX_SECONDS = 180;
@@ -124,12 +125,16 @@
     if (v.stage !== "full") renderText(textIdx, { hidden: !reveal });
     else ui.text.replaceChildren(el("p", "font-sans text-lg text-ink-soft", `${v.total} lines · from the top`));
 
-    show(ui.listen, v.stage !== "full");
+    // While recording, "Listen" gives way to "Start over" (the mulligan): the
+    // child can scrap a take and go again as many times as they like.
+    show(ui.listen, v.stage !== "full" && !recorder);
+    show(ui.redo, !!recorder);
     show(ui.ready, v.stage === "learn");
     show(ui.mic, v.stage !== "learn");
     show(ui.typedForm, !!root.dataset.typed && v.stage !== "learn");
     ui.typedForm.classList.toggle("flex", !!root.dataset.typed && v.stage !== "learn");
     [ui.listen, ui.ready].forEach((b) => (b.disabled = busy || !!recorder));
+    ui.redo.disabled = busy;
     ui.mic.disabled = busy || starting;
   }
 
@@ -244,7 +249,6 @@
     setMic("…", "Starting microphone");
     render();
     setStatus("Starting the mic…");
-    let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 },
@@ -258,37 +262,63 @@
     }
     starting = false;
     clearResult();
+    beginRecorder();
+  }
+
+  function releaseStream() {
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+  }
+
+  // Start a take on the open mic stream. A take ends one of two ways: ■ stops it
+  // and sends it for grading, or "Start over" throws it away and begins another.
+  function beginRecorder(fresh) {
     const mime = pickMime();
     const chunks = [];
+    let discard = false;
     recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    recorder.discard = () => (discard = true);
     recorder.ondataavailable = (e) => e.data && e.data.size && chunks.push(e.data);
     recorder.onstop = () => {
-      stream.getTracks().forEach((t) => t.stop());
       const type = recorder.mimeType || mime || "audio/webm";
       recorder = null;
       clearInterval(recTimer);
       ui.mic.classList.remove("recording");
+      if (discard) {
+        beginRecorder(true);
+        return;
+      }
+      releaseStream();
       const fd = new FormData();
       fd.append("audio", new Blob(chunks, { type }), type.includes("mp4") ? "clip.mp4" : "clip.webm");
       submit(fd);
     };
     recorder.start();
     const started = Date.now();
+    const prompt = fresh ? "↺ Fresh start! 🔴 Recording… tap ■ when you're done." : "🔴 Recording… tap ■ when you're done.";
     ui.mic.classList.add("recording");
     setMic("■", "Stop recording");
     render();
-    setStatus("🔴 Recording… tap ■ when you're done.");
+    setStatus(prompt);
     recTimer = setInterval(() => {
       if (!recorder || busy) return;
       const s = Math.round((Date.now() - started) / 1000);
-      setStatus(`🔴 Recording… ${s}s — tap ■ when you're done.`);
+      setStatus(`${fresh ? "↺ " : ""}🔴 Recording… ${s}s — tap ■ when you're done.`);
       if (s >= MAX_SECONDS) stopRecording();
     }, 500);
   }
 
+  // Mulligan: scrap the current take and start again. Nothing is sent, nothing is
+  // graded, and there's no limit on how many times it can happen.
+  function restartRecording() {
+    if (!recorder || busy || recorder.state === "inactive") return;
+    recorder.discard();
+    recorder.stop();
+  }
+
   // Feedback goes up before onstop fires so the tap never looks ignored.
   function stopRecording() {
-    if (!recorder || busy) return;
+    if (!recorder || busy || recorder.state === "inactive") return;
     clearInterval(recTimer);
     ui.mic.classList.remove("recording");
     showGrading();
@@ -300,6 +330,8 @@
     if (recorder) stopRecording();
     else startRecording();
   });
+
+  ui.redo.addEventListener("click", restartRecording);
 
   ui.listen.addEventListener("click", () => {
     if (view.stage !== "passed") helped = true;
